@@ -3,14 +3,14 @@ on:
   workflow_dispatch:
     
 env:
-  # On Ubuntu, we install the Android SDK in the workspace directory.
+  # You can use a directory within the workspace for the Android SDK.
   ANDROID_HOME: ${{ github.workspace }}/android-sdk
-  ANDROID_ARCH: arm64-v8a
+  ANDROID_ARCH: x86_64
   ANDROID_TARGET: google_apis_playstore
   API_LEVEL: 33
   ANDROID_BUILD_TOOLS_VERSION: 33.0.2
-  # Use an ARM64 system image (adjust if needed for your host architecture)
-  ANDROID_SDK_PACKAGES: system-images;android-33;google_apis_playstore;arm64-v8a platforms;android-33 build-tools;33.0.2 platform-tools emulator
+  # Use an x86_64 system image now
+  ANDROID_SDK_PACKAGES: system-images;android-33;google_apis_playstore;x86_64 platforms;android-33 build-tools;33.0.2 platform-tools emulator
   EMULATOR_TIMEOUT: 350
   EMULATOR_NAME: nexus
 
@@ -21,9 +21,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         
-      - name: Add avdmanager and sdkmanager to system PATH
+      - name: Install Android Command Line Tools
         run: |
-          echo "$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/${ANDROID_BUILD_TOOLS_VERSION}" >> $GITHUB_PATH
+          mkdir -p $ANDROID_HOME/cmdline-tools
+          wget https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip -O cmdline-tools.zip
+          unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
+          mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+          # Add required directories to the PATH
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
+          echo "$ANDROID_HOME/emulator" >> $GITHUB_PATH
 
       - name: Install SDK
         run: |
@@ -32,8 +39,8 @@ jobs:
   
       - name: Create AVD
         run: |
-          # Create the AVD using the ARM64 ABI
-          echo "no" | avdmanager --verbose create avd --force -n $EMULATOR_NAME --abi "arm64-v8a" -k "system-images;android-${API_LEVEL};${ANDROID_TARGET};${ANDROID_ARCH}"
+          # Create the AVD using the x86_64 ABI.
+          echo "no" | avdmanager --verbose create avd --force -n $EMULATOR_NAME --abi "x86_64" -k "system-images;android-${API_LEVEL};${ANDROID_TARGET};${ANDROID_ARCH}"
           
       - name: Launch emulator
         run: |
