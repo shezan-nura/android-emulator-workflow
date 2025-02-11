@@ -3,13 +3,12 @@ on:
   workflow_dispatch:
     
 env:
-  # You can use a directory within the workspace for the Android SDK.
   ANDROID_HOME: ${{ github.workspace }}/android-sdk
   ANDROID_ARCH: x86_64
   ANDROID_TARGET: google_apis_playstore
   API_LEVEL: 33
   ANDROID_BUILD_TOOLS_VERSION: 33.0.2
-  # Use an x86_64 system image now
+  # Use an x86_64 system image
   ANDROID_SDK_PACKAGES: system-images;android-33;google_apis_playstore;x86_64 platforms;android-33 build-tools;33.0.2 platform-tools emulator
   EMULATOR_TIMEOUT: 350
   EMULATOR_NAME: nexus
@@ -27,10 +26,19 @@ jobs:
           wget https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip -O cmdline-tools.zip
           unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
           mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
-          # Add required directories to the PATH
+          # Add required directories to PATH
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
           echo "$ANDROID_HOME/emulator" >> $GITHUB_PATH
+
+      - name: Setup KVM for hardware acceleration
+        run: |
+          sudo apt-get update
+          sudo apt-get install -qqy cpu-checker qemu-kvm libvirt-daemon-system libvirt-clients
+          # Add the current user to the kvm group and adjust /dev/kvm permissions
+          sudo adduser $USER kvm || true
+          sudo chown $USER /dev/kvm || true
+          sudo chmod 777 /dev/kvm || true
 
       - name: Install SDK
         run: |
